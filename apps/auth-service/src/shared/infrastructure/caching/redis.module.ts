@@ -1,9 +1,11 @@
+// Update: apps/auth-service/src/shared/infrastructure/caching/redis.module.ts
+
 import { Global, Module, Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { getRedisConfig } from '../config/redis.config';
+import { CacheService } from './cache.service';
 
-// Token Injection (Kunci untuk memanggil Redis di service lain)
 export const REDIS_CLIENT = 'REDIS_CLIENT';
 
 const redisProvider: Provider = {
@@ -14,9 +16,9 @@ const redisProvider: Provider = {
     inject: [ConfigService],
 };
 
-@Global() // Global: Agar tidak perlu import RedisModule berulang-ulang
+@Global()
 @Module({
-    providers: [redisProvider],
-    exports: [redisProvider], // Export agar module lain bisa pakai
+    providers: [redisProvider, CacheService],
+    exports: [redisProvider, CacheService],
 })
 export class RedisModule { }
