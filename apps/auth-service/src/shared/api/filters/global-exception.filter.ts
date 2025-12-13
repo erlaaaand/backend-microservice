@@ -1,3 +1,5 @@
+// Update: apps/auth-service/src/shared/api/filters/global-exception.filter.ts
+
 import {
     ArgumentsHost,
     Catch,
@@ -7,7 +9,13 @@ import {
     Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { ArgumentInvalidException } from '../../exceptions/argument-invalid.exception'; // Import exception kita
+import { ArgumentInvalidException } from '../../exceptions/argument-invalid.exception';
+import { NotFoundException } from '../../exceptions/not-found.exception';
+import { ConflictException } from '../../exceptions/conflict.exception';
+import { ForbiddenException } from '../../exceptions/forbidden.exception';
+import { UnauthorizedException } from '../../exceptions/unauthorized.exception';
+import { InternalServerException } from '../../exceptions/internal-server.exception';
+import { ValidationException } from '../../exceptions/validation.exception';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -29,17 +37,46 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             message = (errorResponse as any).message || exception.message;
             code = (errorResponse as any).error || 'HTTP_ERROR';
         }
-        // 2. Handle Domain Exceptions (Custom kita)
+        // 2. Handle Domain Exceptions (Custom)
         else if (exception instanceof ArgumentInvalidException) {
-            status = HttpStatus.BAD_REQUEST; // 400
+            status = HttpStatus.BAD_REQUEST;
             message = exception.message;
             code = exception.code;
         }
-        // 3. Handle Error lainnya...
+        else if (exception instanceof ValidationException) {
+            status = HttpStatus.BAD_REQUEST;
+            message = exception.message;
+            code = exception.code;
+        }
+        else if (exception instanceof NotFoundException) {
+            status = HttpStatus.NOT_FOUND;
+            message = exception.message;
+            code = exception.code;
+        }
+        else if (exception instanceof ConflictException) {
+            status = HttpStatus.CONFLICT;
+            message = exception.message;
+            code = exception.code;
+        }
+        else if (exception instanceof UnauthorizedException) {
+            status = HttpStatus.UNAUTHORIZED;
+            message = exception.message;
+            code = exception.code;
+        }
+        else if (exception instanceof ForbiddenException) {
+            status = HttpStatus.FORBIDDEN;
+            message = exception.message;
+            code = exception.code;
+        }
+        else if (exception instanceof InternalServerException) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+            message = exception.message;
+            code = exception.code;
+        }
 
-        // Logging Error (Penting untuk debugging)
+        // Logging Error
         this.logger.error(
-            `[${request.method}] ${request.url}`,
+            `[${request.method}] ${request.url} - ${code}: ${message}`,
             exception instanceof Error ? exception.stack : String(exception),
         );
 
