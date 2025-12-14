@@ -30,56 +30,102 @@ import { RequestContextMiddleware } from './shared/api/middlewares/request-conte
 // Reflector for Guards
 import { Reflector } from '@nestjs/core';
 
+/**
+ * App Module - Root Module
+ * 
+ * Struktur:
+ * 1. Configuration - Environment variables, global config
+ * 2. Shared Infrastructure - Database, Cache, Messaging, Logging
+ * 3. Feature Modules - Auth, Presence, Health
+ * 4. Global Providers - Filters, Interceptors, Guards
+ * 5. Middlewares - Request preprocessing
+ */
 @Module({
     imports: [
-        // 1. Configuration
+        // ============================================
+        // 1. CONFIGURATION
+        // ============================================
         ConfigModule.forRoot({
-            isGlobal: true,
-            envFilePath: '.env',
+            isGlobal: true,           // Available di semua module
+            envFilePath: '.env',      // Path ke .env file
+            cache: true,              // Cache environment variables
         }),
 
-        // 2. Shared Infrastructure
+        // ============================================
+        // 2. SHARED INFRASTRUCTURE MODULES
+        // ============================================
+        // Logger - Centralized logging with context
         LoggerModule,
+
+        // Database - MySQL dengan TypeORM
         DatabaseModule,
+
+        // Redis - Caching & Session management
         RedisModule,
+
+        // Messaging - RabbitMQ untuk event-driven architecture
         MessagingModule,
 
-        // 3. Feature Modules
+        // ============================================
+        // 3. FEATURE MODULES
+        // ============================================
+        // Auth - Authentication & Authorization
         AuthModule,
+
+        // Presence - User online/offline tracking
         PresenceModule,
+
+        // Health - Health check & monitoring
         HealthModule,
     ],
     providers: [
+        // ============================================
+        // 4. GLOBAL PROVIDERS
+        // ============================================
+
         // Global Exception Filter
+        // Menangkap semua exception dan mengubahnya ke format standard
         {
             provide: APP_FILTER,
             useClass: GlobalExceptionFilter,
         },
 
-        // Global Interceptors
+        // Global Interceptors (dieksekusi berurutan)
+
+        // 1. Response Interceptor
+        // Membungkus semua response sukses dengan format standard
         {
             provide: APP_INTERCEPTOR,
             useClass: ResponseInterceptor,
         },
+
+        // 2. Logging Interceptor
+        // Log setiap request & response untuk debugging & monitoring
         {
             provide: APP_INTERCEPTOR,
             useClass: LoggingInterceptor,
         },
+
+        // 3. Timeout Interceptor
+        // Set timeout untuk semua request (default: 30 detik)
         {
             provide: APP_INTERCEPTOR,
             useClass: TimeoutInterceptor,
         },
+
+        // 4. User Activity Interceptor
+        // Update user online status di Redis setiap request
         {
             provide: APP_INTERCEPTOR,
             useClass: UserActivityInterceptor,
         },
 
         // Global Guard (JWT Authentication)
+        // Melindungi semua endpoint kecuali yang di-mark dengan @Public()
         {
             provide: APP_GUARD,
             useFactory: (reflector: Reflector) => {
-                const guard = new JwtAuthGuard();
-                (guard as any).reflector = reflector;
+                const guard = new JwtAuthGuard(reflector);
                 return guard;
             },
             inject: [Reflector],
@@ -87,9 +133,21 @@ import { Reflector } from '@nestjs/core';
     ],
 })
 export class AppModule implements NestModule {
+    /**
+     * Configure Middlewares
+     * Middleware dieksekusi sebelum route handler
+     */
     configure(consumer: MiddlewareConsumer) {
         consumer
-            .apply(CorrelationIdMiddleware, RequestContextMiddleware)
-            .forRoutes('*');
+            .apply(
+                // 1. Correlation ID Middleware
+                // Menambahkan unique ID ke setiap request untuk tracking
+                CorrelationIdMiddleware,
+
+                // 2. Request Context Middleware
+                // Setup request context untuk logging & tracking
+                RequestContextMiddleware,
+            )
+            .forRoutes('*'); // Apply ke semua routes
     }
 }
