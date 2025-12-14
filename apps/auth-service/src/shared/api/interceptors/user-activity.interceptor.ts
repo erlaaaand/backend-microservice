@@ -2,7 +2,7 @@ import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Inject } fr
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import Redis from 'ioredis';
-import { REDIS_CLIENT } from '../../infrastructure/caching/redis.module';
+import { REDIS_CLIENT } from '../../../shared/infrastructure/config/redis.config';
 
 @Injectable()
 export class UserActivityInterceptor implements NestInterceptor {
