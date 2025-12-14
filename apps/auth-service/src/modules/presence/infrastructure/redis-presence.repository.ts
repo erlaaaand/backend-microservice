@@ -2,7 +2,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
-import { REDIS_CLIENT } from '../../../shared/infrastructure/caching/redis.module';
+import { REDIS_CLIENT } from '../../../shared/infrastructure/config/redis.config';
 import { PresenceRepositoryPort } from '../domain/presence.repository.port';
 import { LoggerService } from '../../../shared/infrastructure/logging/logger.service';
 
