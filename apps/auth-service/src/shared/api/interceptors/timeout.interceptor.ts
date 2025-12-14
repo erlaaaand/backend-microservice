@@ -1,16 +1,12 @@
-// apps/auth-service/src/shared/api/interceptors/timeout.interceptor.ts
-
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler, RequestTimeoutException } from '@nestjs/common';
+// 1. Tambahkan 'Optional' ke dalam import
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, RequestTimeoutException, Optional } from '@nestjs/common';
 import { Observable, throwError, TimeoutError } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
 
-/**
- * Interceptor untuk set timeout pada request
- * Default: 30 detik
- */
 @Injectable()
 export class TimeoutInterceptor implements NestInterceptor {
-    constructor(private readonly timeoutMs: number = 30000) { }
+    // 2. Tambahkan decorator @Optional() di sini
+    constructor(@Optional() private readonly timeoutMs: number = 30000) { }
 
     intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
         return next.handle().pipe(
