@@ -55,9 +55,9 @@ export class RegisterUseCase implements UseCase<RegisterRequestDto, LoginRespons
         // NOTE: Pastikan urutan parameter di method create() Entity Anda sesuai!
         // Saran urutan: (password, email, phone, role)
         const credential = Credential.create(
-            hashedPassword, 
-            emailVO, 
-            phoneVO, 
+            hashedPassword,
+            emailVO,
+            phoneVO,
             UserRole.USER
         );
 
