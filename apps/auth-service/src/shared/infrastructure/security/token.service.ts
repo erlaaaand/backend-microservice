@@ -6,7 +6,8 @@ import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 
 export interface TokenPayload {
     sub: string; // User ID
-    email: string;
+    email?: string | null;
+    phoneNumber: string | null;
     role: string;
     iat?: number;
     exp?: number;
