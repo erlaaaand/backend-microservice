@@ -7,7 +7,7 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 
 // Entities
-import { CredentialOrmEntity } from './infrastructure/entities/credential.orm-entity.ts';
+import { CredentialOrmEntity } from './infrastructure/entities/credential.orm-entity';
 
 // Repositories
 import { TypeOrmAuthRepository } from './infrastructure/repositories/typeorm-auth.repository';
@@ -26,6 +26,7 @@ import { ValidateTokenUseCase } from './application/use-cases/validate-token.use
 
 // Event Handlers
 import { PublishUserCreatedHandler } from './application/event-handlers/publish-user-created.handler';
+import { NotifyUserServiceHandler } from './application/event-handlers/notify-user-service.handler';
 
 // Controllers
 import { AuthController } from './presentation/auth.controller';
@@ -35,57 +36,78 @@ import { TokenService } from '../../shared/infrastructure/security/token.service
 import { DomainEventDispatcher } from '../../shared/domain/events/domain-event-dispatcher';
 import { getJwtConfig } from '../../shared/infrastructure/config/jwt.config';
 
+/**
+ * Auth Module
+ * 
+ * Fitur:
+ * - User Registration & Login
+ * - JWT Token Generation & Validation
+ * - Password Hashing & Verification
+ * - Domain Event Publishing
+ * - Role-based Access Control
+ */
 @Module({
     imports: [
-        // TypeORM Entities
+        // TypeORM Entities - Register entities yang digunakan di module ini
         TypeOrmModule.forFeature([CredentialOrmEntity]),
 
-        // JWT Module
+        // JWT Module - Konfigurasi JWT untuk token generation
         JwtModule.registerAsync({
             inject: [ConfigService],
             useFactory: getJwtConfig,
         }),
 
-        // Passport
-        PassportModule,
+        // Passport - Authentication middleware
+        PassportModule.register({ defaultStrategy: 'jwt' }),
     ],
-    controllers: [AuthController],
+    controllers: [
+        AuthController,
+    ],
     providers: [
-        // Mappers
+        // Mappers - Convert antara Domain Entity dan ORM Entity
         CredentialMapper,
 
-        // Repositories
+        // Repositories - Data access layer
         {
             provide: AUTH_REPOSITORY,
             useClass: TypeOrmAuthRepository,
         },
 
-        // Strategies
+        // Strategies - Passport authentication strategies
         JwtStrategy,
 
-        // Services
+        // Services - Shared services
         TokenService,
         DomainEventDispatcher,
 
-        // Use Cases
+        // Use Cases - Business logic
         RegisterUseCase,
         LoginUseCase,
         ValidateTokenUseCase,
 
-        // Event Handlers
+        // Event Handlers - Handle domain events
         PublishUserCreatedHandler,
+        NotifyUserServiceHandler,
     ],
     exports: [
+        // Export agar bisa digunakan module lain
         AUTH_REPOSITORY,
         TokenService,
+        JwtModule,
     ],
 })
 export class AuthModule {
     constructor(private readonly eventDispatcher: DomainEventDispatcher) {
-        // Register event handlers
+        // Register event handlers saat module di-initialize
+        // Handler akan dipanggil ketika event di-dispatch
         this.eventDispatcher.register(
             'user.registered',
             PublishUserCreatedHandler
+        );
+
+        this.eventDispatcher.register(
+            'user.registered',
+            NotifyUserServiceHandler
         );
     }
 }
