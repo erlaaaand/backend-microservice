@@ -1,27 +1,21 @@
-# Dependency dan Build Artifacts
+
 node_modules
 dist
 npm-debug.log
 
-# Git
 .git
 .gitignore
-
-# Environment Variables (PENTING: Jangan masukkan .env asli ke image)
 .env
 .env.test
 
-# Docker
 Dockerfile
 docker-compose.yml
 .dockerignore
 
-# Testing & Coverage
 test
 coverage
 jest.config.ts
 
-# IDE / Editor Files
 .vscode
 .idea
 *.swp

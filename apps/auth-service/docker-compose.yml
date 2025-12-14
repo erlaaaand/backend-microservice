@@ -1,39 +1,105 @@
 version: '3.8'
 
 services:
-  # 1. Database MySQL
-  auth_db:
+  # MySQL Database
+  mysql:
     image: mysql:8.0
-    container_name: auth_mysql_container
-    restart: always
+    container_name: auth-mysql
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: auth_db
+      MYSQL_DATABASE: auth_service_db
+      MYSQL_USER: auth_user
+      MYSQL_PASSWORD: auth_password
     ports:
-      - '3307:3306'
+      - "3307:3306"
     volumes:
-      - auth_mysql_data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
+    networks:
+      - auth-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # 2. Redis (Caching & Presence)
-  auth_redis:
-    image: redis:alpine
-    container_name: auth_redis_container
-    restart: always
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: auth-redis
+    restart: unless-stopped
     ports:
-      - '6379:6379'
-    command: redis-server --appendonly yes
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - auth-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
-  # 3. RabbitMQ (Messaging)
-  auth_rabbitmq:
-    image: rabbitmq:3-management
-    container_name: auth_rabbitmq_container
-    restart: always
-    ports:
-      - '5672:5672' # Port komunikasi
-      - '15672:15672' # UI Management Dashboard
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: auth-rabbitmq
+    restart: unless-stopped
     environment:
-      RABBITMQ_DEFAULT_USER: user
-      RABBITMQ_DEFAULT_PASS: password
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"    # AMQP port
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - auth-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Auth Service (Optional - for production)
+  # auth-service:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: auth-service
+  #   restart: unless-stopped
+  #   environment:
+  #     PORT: 3001
+  #     NODE_ENV: production
+  #     DATABASE_HOST: mysql
+  #     DATABASE_PORT: 3306
+  #     DATABASE_USER: auth_user
+  #     DATABASE_PASSWORD: auth_password
+  #     DATABASE_NAME: auth_service_db
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+  #     RABBITMQ_QUEUE: auth_service_queue
+  #     JWT_ACCESS_SECRET: your-access-secret
+  #     JWT_REFRESH_SECRET: your-refresh-secret
+  #     ENCRYPTION_KEY: your-encryption-key
+  #   ports:
+  #     - "3001:3001"
+  #   depends_on:
+  #     mysql:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #     rabbitmq:
+  #       condition: service_healthy
+  #   networks:
+  #     - auth-network
+
+networks:
+  auth-network:
+    driver: bridge
 
 volumes:
-  auth_mysql_data:
+  mysql_data:
+  redis_data:
+  rabbitmq_data:
