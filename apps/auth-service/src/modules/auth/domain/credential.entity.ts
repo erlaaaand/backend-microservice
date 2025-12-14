@@ -5,6 +5,7 @@ import { Email } from '../../../shared/domain/value-objects/email.vo';
 import { Password } from '../../../shared/domain/value-objects/password.vo';
 import { ArgumentInvalidException } from '../../../shared/exceptions/argument-invalid.exception';
 import { UserRegisteredEvent } from './events/user-registered.event';
+import { PhoneNumber } from '../../../shared/domain/value-objects/phone-number.vo';
 
 export enum UserRole {
     USER = 'USER',
@@ -13,6 +14,7 @@ export enum UserRole {
 
 interface CredentialProps {
     email: Email;
+    phoneNumber?: PhoneNumber;
     password: Password;
     role: UserRole;
     isActive: boolean;
@@ -26,6 +28,10 @@ interface CredentialProps {
 export class Credential extends AggregateRoot<CredentialProps> {
     get email(): Email {
         return this.props.email;
+    }
+
+    get phoneNumber(): PhoneNumber | undefined {
+        return this.props.phoneNumber;
     }
 
     get password(): Password {
@@ -58,12 +64,14 @@ export class Credential extends AggregateRoot<CredentialProps> {
      * Factory method untuk membuat credential baru
      */
     public static create(
-        email: Email,
         password: Password,
+        email?: Email,
+        phoneNumber?: PhoneNumber,
         role: UserRole = UserRole.USER
     ): Credential {
         const credential = new Credential({
             email,
+            phoneNumber,
             password,
             role,
             isActive: true,
@@ -163,6 +171,9 @@ export class Credential extends AggregateRoot<CredentialProps> {
         }
         if (!this.props.role) {
             throw new ArgumentInvalidException('Role is required');
+        }
+        if (!this.props.email && !this.props.phoneNumber) {
+            throw new ArgumentInvalidException('Email OR Phone Number is required');
         }
     }
 }
