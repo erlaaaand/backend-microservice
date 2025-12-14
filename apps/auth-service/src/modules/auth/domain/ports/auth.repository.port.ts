@@ -17,6 +17,13 @@ export interface AuthRepositoryPort extends Repository<Credential, string> {
      * Check if email already exists
      */
     emailExists(email: string): Promise<boolean>;
+
+    /**
+     * Find credential by phone
+     * @param phone
+     */
+
+    findByPhone(phone: string): Promise<Credential | null>; // Tambahan
 }
 
 // Token untuk dependency injection
