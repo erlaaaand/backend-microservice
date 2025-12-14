@@ -1,8 +1,7 @@
 // apps/auth-service/src/shared/infrastructure/caching/cache.service.ts
-
 import { Inject, Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
-import { REDIS_CLIENT } from './redis.module';
+import { REDIS_CLIENT } from '../config/redis.config';
 import { LoggerService } from '../logging/logger.service';
 
 export interface CacheOptions {
