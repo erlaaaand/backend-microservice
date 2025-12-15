@@ -1,0 +1,38 @@
+# Dependencies (akan diinstall ulang di dalam container agar sesuai OS Linux)
+node_modules/
+
+# Build output (kita ingin build fresh di dalam Docker, bukan copy dari local)
+dist/
+
+# Logs
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+*.log
+
+# Environment variables (SANGAT PENTING: Jangan masukkan secrets ke dalam image)
+.env
+.env.*
+! .env.example
+
+# Git
+.git/
+.gitignore
+
+# Docker config files (tidak perlu ada di dalam image)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# IDE & Editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing coverage reports
+coverage/
+
+# Documentation & Misc
+README.md
+LICENSE
