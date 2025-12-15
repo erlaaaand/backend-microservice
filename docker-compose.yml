@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # SHARED INFRASTRUCTURE (Infrastructure Layer)
+  # ==========================================
+
+  # Satu MySQL untuk semua
+  mysql:
+    image: mysql:8.0
+    container_name: microservices-db
+    ports:
+      - '3306:3306' # Gunakan port standar 3306 di host
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Script ini akan jalan otomatis saat container pertama kali dibuat
+      - ./infra/mysql-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-net
+
+  # Satu Redis untuk semua
+  redis:
+    image: redis:7-alpine
+    container_name: microservices-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - microservices-net
+
+  # Satu RabbitMQ untuk semua
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: microservices-rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - microservices-net
+
+  # ==========================================
+  # APPLICATION LAYER (Optional untuk dijalankan via Docker)
+  # ==========================================
+
+  notification-service:
+    build:
+      context: ./apps/notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - '3002:3002'
+    environment:
+      # Koneksi Internal Docker (panggil nama service)
+      DATABASE_HOST: mysql
+      DATABASE_PORT: 3306
+      DATABASE_USER: notif_user
+      DATABASE_PASSWORD: notif_pass
+      DATABASE_NAME: notification_db
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+  auth-service:
+    build:
+      context: ./apps/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - '3001:3001'
+    environment:
+      # Koneksi Internal Docker
+      DATABASE_HOST: mysql
+      DATABASE_PORT: 3306
+      DATABASE_USER: auth_user
+      DATABASE_PASSWORD: auth_pass
+      DATABASE_NAME: auth_db
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - microservices-net
+
+# Shared Network agar mereka bisa saling ping "mysql", "redis", dll.
+networks:
+  microservices-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
+  rabbitmq_data:
