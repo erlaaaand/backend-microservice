@@ -1,0 +1,11 @@
+<!-- emails/order-confirmation.hbs -->
+<h2>Order Confirmation</h2>
+<p>Hi {{userName}},</p>
+<p>Thank you for your order! Order ID: <strong>{{orderId}}</strong></p>
+<h3>Order Summary:</h3>
+<ul>
+    {{#each items}}
+    <li>{{this.name}} - Qty: {{this.quantity}} - ${{this.price}}</li>
+    {{/each}}
+</ul>
+<p><strong>Total: ${{total}}</strong></p>
